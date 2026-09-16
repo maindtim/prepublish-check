@@ -1,0 +1,11 @@
+{
+  "name": "prepublish-check",
+  "version": "1.0.0",
+  "description": "Audit a package and its public listing before publishing to a marketplace.",
+  "type": "module",
+  "bin": { "prepublish-check": "bin/prepublish-check.js" },
+  "scripts": {
+    "test": "node --test test/checks.test.js"
+  },
+  "license": "MIT"
+}
