@@ -43,7 +43,61 @@ export const RULES = [
         pattern: /\b(TODO|FIXME|XXX|LOREM IPSUM|REPLACE ME|YOUR_API_KEY)\b/, // prepublish-check-ignore
         message: 'Unfinished placeholder. Buyers read this as abandoned work.',
     },
+    {
+        id: 'unbounded-retry',
+        severity: 'medium',
+        // An instruction to retry with no stop condition becomes a loop the model cannot exit.
+        pattern: /\b(?:retry|try again|keep (?:retrying|trying)|repeat)\b[^.\n]{0,60}?\b(?:until (?:it )?(?:succeeds|works|returns|passes)|indefinitely|forever|as many times as needed|as needed)\b/i, // prepublish-check-ignore
+        message: 'Retry instruction with no bound. Give it a number ("retry up to 3 times") and a give-up branch; otherwise a permanently failing tool loops.',
+    },
 ];
+
+// Suggested on Moltbook (post 777be8a4, 2026-09-21) by prismdeadlines: imperative text in a
+// SKILL.md is a control-flow problem, not only a scanner problem.
+// Only fires on a named target that looks like a tool: backticked, snake_case, or called with parens.
+// A plain "run commands" or "execute the plan" is prose about the skill, not an order to the runtime.
+const TOOL_CALL_IMPERATIVE = /\b(?:call|invoke|run|execute|trigger|confirm with)\s+(?:the\s+)?(?:`[^`\n]+`|[A-Za-z_][\w.]*\s*\(\s*\)|[a-z][a-z0-9]*(?:_[a-z0-9]+)+)/i;
+const FAILURE_BRANCH = /\b(?:if|when|unless|only|on (?:error|failure)|otherwise|should)\b/i;
+const OPTIMISTIC_VERB_NAME = /\b(draft|preview|propose|simulate|dry[_-]?run)[_-][a-z][\w-]*/gi;
+const IRREVERSIBLE_VERB = /\b(sends?|posts?|publishes?|deletes?|charges?|transfers?|submits?|emails?|commits?|merges?)\b/i;
+
+/** Control-flow checks that only make sense inside a SKILL.md. */
+function skillControlFlowFindings(text, rel, description) {
+    const findings = [];
+    const lines = text.split(/\r?\n/);
+
+    if (description) {
+        const sentences = description.split(/(?<=[.!?])\s+/).filter(Boolean);
+        const last = sentences[sentences.length - 1] || '';
+        if (TOOL_CALL_IMPERATIVE.test(last) && !FAILURE_BRANCH.test(last)) {
+            findings.push({
+                id: 'description-imperative-tail',
+                severity: 'medium',
+                file: rel,
+                line: 1,
+                message: 'The description ends on an unconditional order to call something. The model runs that as the next step even when the previous tool errored. Add the condition ("...only if the run returned results") or move it into the steps.',
+                excerpt: last.trim().slice(0, 120),
+            });
+        }
+    }
+
+    lines.forEach((line, idx) => {
+        if (line.includes('prepublish-check-ignore')) return;
+        for (const match of line.matchAll(OPTIMISTIC_VERB_NAME)) {
+            if (!IRREVERSIBLE_VERB.test(line)) continue;
+            findings.push({
+                id: 'verb-honesty-review',
+                severity: 'low',
+                file: rel,
+                line: idx + 1,
+                message: `"${match[0]}" is named like a rehearsal but this line describes a real action. If it is irreversible, say so in the first clause of the description, not the third sentence. Review by hand: this one is a judgement call, not a regex.`,
+                excerpt: line.trim().slice(0, 120),
+            });
+        }
+    });
+
+    return findings;
+}
 
 async function* walk(dir, root = dir) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -115,6 +169,7 @@ export async function scanPackage(dir, { maxFileMb = 5, ignore = [] } = {}) {
                 if (!fm.description) findings.push({ id: 'skill-description-missing', severity: 'high', file: file.rel, line: 1, message: 'Frontmatter is missing "description": it is what makes the skill trigger.' });
                 else if (fm.description.length < 60) findings.push({ id: 'skill-description-short', severity: 'low', file: file.rel, line: 1, message: 'Description is very short. Name the situations that should trigger the skill.' });
             }
+            findings.push(...skillControlFlowFindings(text, file.rel, fm && fm.description));
         }
     }
 

@@ -22,6 +22,14 @@ node bin/prepublish-check.js <folder> [--url <public page>] [--paid] [--forbidde
 - Unfinished placeholders left in the text: task markers, sample credential names, filler latin.
 - `SKILL.md` frontmatter: present, with `name` and a description long enough to trigger the skill.
 - Missing `LICENSE`, oversized files, empty package.
+- Control-flow smells in a `SKILL.md` description (suggested by a Moltbook reader, `prismdeadlines`,
+  2026-09-21 — imperative text is a control-flow problem, not only a scanner problem): a description
+  that ends on an unconditional "then call X to confirm" gets executed as the next step even after a
+  failing prior call; a retry instruction with no stop condition ("until it succeeds", "indefinitely")
+  becomes a loop the model cannot exit.
+- A low-severity review flag when a `draft_`/`preview_`/`propose_`-named action sits next to an
+  irreversible verb (sends, posts, deletes, charges…) in the same line — worth a human read, since
+  whether the name is honest about the side effect is a judgement call, not a regex.
 
 **On the public page, fetched without your session**
 - The price is actually visible and there is a buy or install action.

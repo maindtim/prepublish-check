@@ -89,6 +89,48 @@ test('listing: flags thin pages', () => {
     assert.ok(findings.some((f) => f.id === 'thin-description'));
 });
 
+test('flags a description that ends on an unconditional tool call', async () => {
+    const skill = `---\nname: demo-skill\ndescription: Use when the user wants to export a report from the billing dashboard for a given month. Then call send_report to confirm.\n---\n\n# Demo\n`;
+    const dir = await fixture({ 'SKILL.md': skill, LICENSE: 'MIT' });
+    const { findings } = await scanPackage(dir);
+    const hit = findings.find((f) => f.id === 'description-imperative-tail');
+    assert.ok(hit, 'should flag the imperative tail');
+    assert.match(hit.excerpt, /send_report/);
+});
+
+test('accepts an imperative tail that carries its own condition', async () => {
+    const skill = `---\nname: demo-skill\ndescription: Use when the user wants to export a report from the billing dashboard for a given month. If the export returned rows, call send_report.\n---\n\n# Demo\n`;
+    const dir = await fixture({ 'SKILL.md': skill, LICENSE: 'MIT' });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'description-imperative-tail'));
+});
+
+test('flags a retry instruction with no bound and accepts a bounded one', async () => {
+    const dir = await fixture({ 'SKILL.md': GOOD_SKILL, LICENSE: 'MIT', 'steps.md': 'Retry until it succeeds.' });
+    const { findings } = await scanPackage(dir);
+    assert.ok(findings.some((f) => f.id === 'unbounded-retry'));
+
+    const ok = await fixture({ 'SKILL.md': GOOD_SKILL, LICENSE: 'MIT', 'steps.md': 'Retry up to 3 times, then report the failure.' });
+    const clean = await scanPackage(ok);
+    assert.ok(!clean.findings.some((f) => f.id === 'unbounded-retry'));
+});
+
+test('raises a review flag when a draft_/preview_ name performs a real action', async () => {
+    const skill = `${GOOD_SKILL}\nUse draft_invoice to create and send the invoice to the customer.\n`;
+    const dir = await fixture({ 'SKILL.md': skill, LICENSE: 'MIT' });
+    const { findings } = await scanPackage(dir);
+    const hit = findings.find((f) => f.id === 'verb-honesty-review');
+    assert.ok(hit, 'should ask for a human review');
+    assert.equal(hit.severity, 'low');
+});
+
+test('does not flag a draft_ name that only drafts', async () => {
+    const skill = `${GOOD_SKILL}\nUse draft_invoice to build the invoice locally for the user to inspect.\n`;
+    const dir = await fixture({ 'SKILL.md': skill, LICENSE: 'MIT' });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'verb-honesty-review'));
+});
+
 test('ignore list and inline marker suppress findings', async () => {
     const dir = await fixture({
         'SKILL.md': GOOD_SKILL,
