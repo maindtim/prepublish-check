@@ -19,10 +19,11 @@ export const RULES = [
     {
         id: 'email-address',
         severity: 'high',
-        // Excludes common version-placeholder words ("package@latest", "lib@next", semver docs) and
+        // Excludes common version-placeholder words ("package@latest", "lib@next", semver docs),
         // icon-resolution suffixes ("icon@2x.png", "logo@3x.jpg", standard macOS/iOS/Tauri/Electron
-        // naming) that otherwise match the same shape as a real address.
-        pattern: /[\w.+-]+@(?!example\.|test\.|major\.|minor\.|patch\.|latest\b|next\b|\d+x\.)[\w-]+\.[a-z]{2,}/i, // prepublish-check-ignore
+        // naming), and GitHub's own noreply address (an intentionally anonymized, already-public
+        // contact form used in SECURITY.md, not a leaked personal address).
+        pattern: /[\w.+-]+@(?!example\.|test\.|major\.|minor\.|patch\.|latest\b|next\b|\d+x\.|users\.noreply\.github\.)[\w-]+\.[a-z]{2,}/i, // prepublish-check-ignore
         message: 'Email address in a shipped file. Owner contact details do not belong in a public package.',
     },
     {

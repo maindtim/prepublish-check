@@ -202,6 +202,16 @@ test('still flags a real email next to an icon-like filename', async () => {
     assert.ok(findings.some((f) => f.id === 'email-address'), 'a real address should still be flagged');
 });
 
+test('does not flag a GitHub noreply address in SECURITY.md as a leaked email', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'SECURITY.md': 'Report vulnerabilities to: someuser@users.noreply.github.com\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'email-address'), 'a GitHub noreply address is an intentional public contact, not a leak');
+});
+
 test('does not flag a generic /Users/you placeholder path as a leaked username', async () => {
     const dir = await fixture({
         'SKILL.md': GOOD_SKILL,
