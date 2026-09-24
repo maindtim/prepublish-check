@@ -9,20 +9,27 @@ export const RULES = [
     {
         id: 'dangerous-command',
         severity: 'high',
-        // Matches remote-installer one-liners and destructive/eval patterns, even inside prose.
-        pattern: /(curl|wget)[^\n]{0,80}\|\s*(ba)?sh|rm\s+-rf\s+[^\n]|eval\s*\(|child_process|subprocess\.\w+\([^)]*shell\s*=\s*True/i, // prepublish-check-ignore
+        // Matches remote-installer one-liners and destructive/eval/explicit-shell patterns, even inside prose.
+        // Deliberately does NOT match a bare `child_process`/`subprocess` import: spawning a subprocess
+        // (e.g. to drive a CLI under test) is normal and not itself dangerous. Only an explicit shell
+        // invocation (piped installer, shell:true/shell=True) or a destructive/eval pattern counts.
+        pattern: /(curl|wget)[^\n]{0,80}\|\s*(ba)?sh|rm\s+-rf\s+[^\n]|eval\s*\(|shell\s*[:=]\s*True|subprocess\.\w+\([^)]*shell\s*=\s*True/i, // prepublish-check-ignore
         message: 'Dangerous shell pattern in a shipped file. Marketplace scanners match strings, not intent: even a warning that quotes the command gets rejected. Describe it in words instead.',
     },
     {
         id: 'email-address',
         severity: 'high',
-        pattern: /[\w.+-]+@(?!example\.|test\.)[\w-]+\.[a-z]{2,}/i, // prepublish-check-ignore
+        // Excludes common version-placeholder words ("package@latest", "lib@next", semver docs) that
+        // otherwise match the same shape as a real address.
+        pattern: /[\w.+-]+@(?!example\.|test\.|major\.|minor\.|patch\.|latest\b|next\b)[\w-]+\.[a-z]{2,}/i, // prepublish-check-ignore
         message: 'Email address in a shipped file. Owner contact details do not belong in a public package.',
     },
     {
         id: 'absolute-path',
         severity: 'medium',
-        pattern: /(?:[A-Z]:\\Users\\[^\\\s"']+|\/(?:home|Users)\/[^\/\s"']+)/, // prepublish-check-ignore
+        // Excludes generic documentation placeholders ("/Users/you/...", "\Users\username\...") that
+        // are not an actual leaked machine owner.
+        pattern: /(?:[A-Z]:\\Users\\(?!you\\|user\\|username\\|yourname\\)[^\\\s"']+|\/(?:home|Users)\/(?!you\/|user\/|username\/|yourname\/)[^\/\s"']+)/, // prepublish-check-ignore
         message: 'Absolute path with a username. It leaks the machine owner and breaks on every other computer.',
     },
     {

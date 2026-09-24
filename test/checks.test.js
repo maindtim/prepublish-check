@@ -131,6 +131,57 @@ test('does not flag a draft_ name that only drafts', async () => {
     assert.ok(!findings.some((f) => f.id === 'verb-honesty-review'));
 });
 
+test('does not flag a bare child_process/subprocess import as dangerous', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'test/client.test.mjs': 'import { execFileSync, spawnSync } from "node:child_process";\n',
+        'scripts/dev.mjs': 'import { spawn } from "node:child_process";\nspawn("node", ["server.js"]);\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'dangerous-command'), 'a plain import/spawn call is not itself dangerous');
+});
+
+test('still flags an explicit shell:true invocation', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'run.js': 'spawn(userInput, { shell: true });\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(findings.some((f) => f.id === 'dangerous-command'), 'explicit shell:true should still be flagged');
+});
+
+test('does not flag npm version-placeholder syntax as an email address', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'README.md': 'The first time a tool needs `package@major.minor`, it resolves the version.\nInstall with `npm i lib@latest`.\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'email-address'), 'version placeholders should not match as an email');
+});
+
+test('does not flag a generic /Users/you placeholder path as a leaked username', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'README.md': '"dir": "/Users/you/code/my-app"\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'absolute-path'), 'a documentation placeholder is not a real leak');
+});
+
+test('still flags a real absolute path with a real-looking username', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'notes.md': 'Config lives at /Users/jsmith/work/secret-project\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(findings.some((f) => f.id === 'absolute-path'), 'a real machine username should still be flagged');
+});
+
 test('ignore list and inline marker suppress findings', async () => {
     const dir = await fixture({
         'SKILL.md': GOOD_SKILL,
