@@ -45,6 +45,17 @@ test('detects email, absolute path and token', async () => {
     assert.ok(ids.includes('secret-like-token'));
 });
 
+test('ignores emails and tokens inside package-manager lockfiles', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'pnpm-lock.yaml': 'glob@7.2.3:\n    deprecated: contact the maintainer at i@izs.me for support\n',
+        'package-lock.json': '{"note": "contact support@upstream-package.dev"}',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.equal(findings.filter((f) => f.severity === 'high').length, 0);
+});
+
 test('flags missing license and bad frontmatter', async () => {
     const dir = await fixture({ 'SKILL.md': '# No frontmatter here\n' });
     const { findings } = await scanPackage(dir);

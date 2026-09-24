@@ -3,6 +3,11 @@ import path from 'node:path';
 
 const TEXT_EXT = new Set(['.md', '.txt', '.json', '.js', '.mjs', '.ts', '.py', '.sh', '.ps1', '.yml', '.yaml', '.toml', '.gd', '.html', '.css']);
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.godot', '__pycache__']);
+// Package-manager lockfiles are machine-generated and carry verbatim text from third-party package
+// metadata (deprecation notices, maintainer contact emails baked into the registry by upstream authors),
+// not anything the repo owner wrote or leaked. Scanning them produces findings about someone else's
+// npm package, not this package.
+const SKIP_FILES = new Set(['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'cargo.lock', 'gemfile.lock', 'poetry.lock', 'composer.lock', 'go.sum']);
 
 /** Checks that come from real publishing failures. Each one carries the case that produced it. */
 export const RULES = [
@@ -155,6 +160,7 @@ export async function scanPackage(dir, { maxFileMb = 5, ignore = [] } = {}) {
         if (info.size > maxFileMb * 1024 * 1024) {
             findings.push({ id: 'large-file', severity: 'medium', file: file.rel, line: 0, message: `File is ${(info.size / 1048576).toFixed(1)} MB. Marketplaces often reject or truncate large uploads.` });
         }
+        if (SKIP_FILES.has(base)) continue;
         if (!TEXT_EXT.has(path.extname(file.rel).toLowerCase())) continue;
 
         const text = await readFile(file.full, 'utf8');
