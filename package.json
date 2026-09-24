@@ -1,6 +1,6 @@
 {
   "name": "prepublish-check",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Audit a package and its public listing before publishing to a marketplace.",
   "type": "module",
   "bin": { "prepublish-check": "bin/prepublish-check.js" },

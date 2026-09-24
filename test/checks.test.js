@@ -152,6 +152,26 @@ test('still flags an explicit shell:true invocation', async () => {
     assert.ok(findings.some((f) => f.id === 'dangerous-command'), 'explicit shell:true should still be flagged');
 });
 
+test('does not flag a compound word like "golden-eval" as a dangerous eval() call', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'tests/fake_backend.py': '"""Deterministic lexical embeddings for golden-eval (v0.8 E20).\n\nNot a model: a sparse bag-of-tokens.\n"""\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'dangerous-command'), 'a hyphenated word ending in "eval" is not an eval() call');
+});
+
+test('still flags a real eval( call even with a space before the paren', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'run.js': 'const result = eval (userInput);\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(findings.some((f) => f.id === 'dangerous-command'), 'eval ( with a space should still be flagged');
+});
+
 test('does not flag npm version-placeholder syntax as an email address', async () => {
     const dir = await fixture({
         'SKILL.md': GOOD_SKILL,
