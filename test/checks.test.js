@@ -182,6 +182,26 @@ test('does not flag npm version-placeholder syntax as an email address', async (
     assert.ok(!findings.some((f) => f.id === 'email-address'), 'version placeholders should not match as an email');
 });
 
+test('does not flag an icon@2x.png resolution suffix as an email address', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'tauri.conf.json': '"icons/128x128@2x.png",\n"icons/icon@3x.png",\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(!findings.some((f) => f.id === 'email-address'), 'icon resolution suffixes should not match as an email');
+});
+
+test('still flags a real email next to an icon-like filename', async () => {
+    const dir = await fixture({
+        'SKILL.md': GOOD_SKILL,
+        LICENSE: 'MIT',
+        'SECURITY.md': 'Report issues to security@realcompany.com\n',
+    });
+    const { findings } = await scanPackage(dir);
+    assert.ok(findings.some((f) => f.id === 'email-address'), 'a real address should still be flagged');
+});
+
 test('does not flag a generic /Users/you placeholder path as a leaked username', async () => {
     const dir = await fixture({
         'SKILL.md': GOOD_SKILL,

@@ -19,9 +19,10 @@ export const RULES = [
     {
         id: 'email-address',
         severity: 'high',
-        // Excludes common version-placeholder words ("package@latest", "lib@next", semver docs) that
-        // otherwise match the same shape as a real address.
-        pattern: /[\w.+-]+@(?!example\.|test\.|major\.|minor\.|patch\.|latest\b|next\b)[\w-]+\.[a-z]{2,}/i, // prepublish-check-ignore
+        // Excludes common version-placeholder words ("package@latest", "lib@next", semver docs) and
+        // icon-resolution suffixes ("icon@2x.png", "logo@3x.jpg", standard macOS/iOS/Tauri/Electron
+        // naming) that otherwise match the same shape as a real address.
+        pattern: /[\w.+-]+@(?!example\.|test\.|major\.|minor\.|patch\.|latest\b|next\b|\d+x\.)[\w-]+\.[a-z]{2,}/i, // prepublish-check-ignore
         message: 'Email address in a shipped file. Owner contact details do not belong in a public package.',
     },
     {
