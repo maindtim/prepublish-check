@@ -9,8 +9,8 @@ import { RULES } from './scan-package.js';
  * same rule the entry was pinned against. Two ways it can stop being the same rule:
  *
  * - the `ruleId` no longer exists in `RULES` (the check was removed or renamed), or
- * - the rule exists but its `version` moved past `ruleVersion` (its `pattern` or `message`
- *   changed since the entry was pinned).
+ * - the rule exists but its `version` no longer equals `ruleVersion` (the entry was pinned against
+ *   a different revision of the rule, in either direction).
  *
  * Either way, a straight pass/fail would be a guess dressed up as a result. This returns a
  * third state, `stale_baseline`, instead of defaulting to pass or to fail.

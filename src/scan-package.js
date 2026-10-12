@@ -11,10 +11,10 @@ const SKIP_FILES = new Set(['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 
 
 /**
  * Checks that come from real publishing failures. Each one carries the case that produced it.
- * `version` is the rule's own revision tag: it only changes when that rule's `pattern` or
- * `message` changes, independent of the package version. A regression baseline (see
- * `src/regression-baseline.js`) pins this tag so a later edit to the rule is detectable even
- * when the rule `id` survives unchanged.
+ * `version` is the rule's own revision field, independent of the package version. The intent is
+ * to bump it when that rule's `pattern` or `message` changes — nothing here enforces that; it is
+ * a convention, not a check. A regression baseline (see `src/regression-baseline.js`) pins this
+ * field so a later edit to the rule is detectable even when the rule `id` survives unchanged.
  */
 export const RULES = [
     {

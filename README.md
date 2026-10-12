@@ -72,9 +72,10 @@ npm test
 
 ## Regression baseline (`src/regression-baseline.js`)
 
-Each pattern-based rule in `RULES` (`src/scan-package.js`) carries its own `version` tag, separate
-from the package version: it only moves when that rule's `pattern` or `message` changes. A baseline
-entry pins one fixture line to a rule's `id` + `version` and the hit it should produce
+Each pattern-based rule in `RULES` (`src/scan-package.js`) carries its own `version` field, separate
+from the package version in `package.json`. The intent is to bump a rule's `version` when its
+`pattern` or `message` changes — nothing in the code enforces that; it is a convention, not a check.
+A baseline entry pins one fixture line to a rule's `id` + `version` and the hit it should produce
 (`test/regression-baseline.json`).
 
 `checkBaseline(entry)` compares the pinned line against the live rule and returns one of three
@@ -82,9 +83,9 @@ states, not two:
 
 - `pass` / `fail` — the rule still exists at the pinned version, and the line does or does not match
   as expected.
-- `stale_baseline` — the rule's `id` was removed, or its `version` moved past the one the entry was
-  pinned to. The comparison is not meaningful anymore, so it is reported as a third state instead of
-  defaulting to pass or fail.
+- `stale_baseline` — the rule's `id` was removed, or its `version` no longer equals the one the
+  entry was pinned to (including a version that moved backward or was renumbered). The comparison is
+  not meaningful anymore, so it is reported as a third state instead of defaulting to pass or fail.
 
 This distinguishes "the rule changed, re-check this case by hand" from "the rule still behaves as
 pinned". Scope: pattern-based rules only (`RULES`), not the `SKILL.md` control-flow checks
