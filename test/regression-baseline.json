@@ -1,0 +1,44 @@
+[
+  {
+    "ruleId": "dangerous-command",
+    "ruleVersion": "1.2.0",
+    "line": "\"\"\"Deterministic lexical embeddings for golden-eval (v0.8 E20).",
+    "expectHit": false,
+    "note": "compound word ending in eval, not an eval( call"
+  },
+  {
+    "ruleId": "dangerous-command",
+    "ruleVersion": "1.2.0",
+    "line": "const result = eval (userInput);",
+    "expectHit": true,
+    "note": "real eval( call with a space before the paren"
+  },
+  {
+    "ruleId": "email-address",
+    "ruleVersion": "1.2.0",
+    "line": "Report vulnerabilities to: someuser@users.noreply.github.com",
+    "expectHit": false,
+    "note": "GitHub noreply address, not a leaked personal address"
+  },
+  {
+    "ruleId": "email-address",
+    "ruleVersion": "1.2.0",
+    "line": "\"icons/128x128@2x.png\",",
+    "expectHit": false,
+    "note": "icon resolution suffix, not an email"
+  },
+  {
+    "ruleId": "email-address",
+    "ruleVersion": "1.2.0",
+    "line": "Report issues to security@realcompany.com",
+    "expectHit": true,
+    "note": "a real address next to an icon-like filename still has to be caught"
+  },
+  {
+    "ruleId": "absolute-path",
+    "ruleVersion": "1.2.0",
+    "line": "\"dir\": \"/Users/you/code/my-app\"",
+    "expectHit": false,
+    "note": "documentation placeholder, not a real leak"
+  }
+]

@@ -9,11 +9,18 @@ const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.godot', '_
 // npm package, not this package.
 const SKIP_FILES = new Set(['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'cargo.lock', 'gemfile.lock', 'poetry.lock', 'composer.lock', 'go.sum']);
 
-/** Checks that come from real publishing failures. Each one carries the case that produced it. */
+/**
+ * Checks that come from real publishing failures. Each one carries the case that produced it.
+ * `version` is the rule's own revision tag: it only changes when that rule's `pattern` or
+ * `message` changes, independent of the package version. A regression baseline (see
+ * `src/regression-baseline.js`) pins this tag so a later edit to the rule is detectable even
+ * when the rule `id` survives unchanged.
+ */
 export const RULES = [
     {
         id: 'dangerous-command',
         severity: 'high',
+        version: '1.2.0',
         // Matches remote-installer one-liners and destructive/eval/explicit-shell patterns, even inside prose.
         // Deliberately does NOT match a bare `child_process`/`subprocess` import: spawning a subprocess
         // (e.g. to drive a CLI under test) is normal and not itself dangerous. Only an explicit shell
@@ -24,6 +31,7 @@ export const RULES = [
     {
         id: 'email-address',
         severity: 'high',
+        version: '1.2.0',
         // Excludes common version-placeholder words ("package@latest", "lib@next", semver docs),
         // icon-resolution suffixes ("icon@2x.png", "logo@3x.jpg", standard macOS/iOS/Tauri/Electron
         // naming), and GitHub's own noreply address (an intentionally anonymized, already-public
@@ -34,6 +42,7 @@ export const RULES = [
     {
         id: 'absolute-path',
         severity: 'medium',
+        version: '1.2.0',
         // Excludes generic documentation placeholders ("/Users/you/...", "\Users\username\...") that
         // are not an actual leaked machine owner.
         pattern: /(?:[A-Z]:\\Users\\(?!you\\|user\\|username\\|yourname\\)[^\\\s"']+|\/(?:home|Users)\/(?!you\/|user\/|username\/|yourname\/)[^\/\s"']+)/, // prepublish-check-ignore
@@ -42,24 +51,28 @@ export const RULES = [
     {
         id: 'secret-like-token',
         severity: 'high',
+        version: '1.2.0',
         pattern: /\b(sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|apify_api_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})\b/, // prepublish-check-ignore
         message: 'Looks like a live credential. Rotate it and move it out of the package.',
     },
     {
         id: 'phone-number',
         severity: 'medium',
+        version: '1.2.0',
         pattern: /(?:^|[\s(])\+\d{1,3}[\s-]?\d{6,}/,
         message: 'Phone number in a shipped file.',
     },
     {
         id: 'placeholder-left',
         severity: 'medium',
+        version: '1.2.0',
         pattern: /\b(TODO|FIXME|XXX|LOREM IPSUM|REPLACE ME|YOUR_API_KEY)\b/, // prepublish-check-ignore
         message: 'Unfinished placeholder. Buyers read this as abandoned work.',
     },
     {
         id: 'unbounded-retry',
         severity: 'medium',
+        version: '1.2.0',
         // An instruction to retry with no stop condition becomes a loop the model cannot exit.
         pattern: /\b(?:retry|try again|keep (?:retrying|trying)|repeat)\b[^.\n]{0,60}?\b(?:until (?:it )?(?:succeeds|works|returns|passes)|indefinitely|forever|as many times as needed|as needed)\b/i, // prepublish-check-ignore
         message: 'Retry instruction with no bound. Give it a number ("retry up to 3 times") and a give-up branch; otherwise a permanently failing tool loops.',

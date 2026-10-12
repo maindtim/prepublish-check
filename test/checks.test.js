@@ -1,10 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { scanPackage } from '../src/scan-package.js';
 import { analyzeListingHtml } from '../src/check-listing.js';
+import { checkBaseline, checkBaselineSet } from '../src/regression-baseline.js';
+
+const BASELINE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'regression-baseline.json');
 
 async function fixture(files) {
     const dir = await mkdtemp(path.join(tmpdir(), 'ppc-'));
@@ -241,6 +245,30 @@ test('still flags a real absolute path with a real-looking username', async () =
     });
     const { findings } = await scanPackage(dir);
     assert.ok(findings.some((f) => f.id === 'absolute-path'), 'a real machine username should still be flagged');
+});
+
+test('regression baseline: pinned cases pass against the live rules', async () => {
+    const entries = JSON.parse(await readFile(BASELINE_PATH, 'utf8'));
+    const { counts, results } = checkBaselineSet(entries);
+    const failed = results.filter((r) => r.status === 'fail');
+    assert.equal(failed.length, 0, `unexpected fail: ${JSON.stringify(failed)}`);
+    assert.equal(counts.pass, entries.length);
+    assert.equal(counts.stale_baseline, 0);
+});
+
+test('regression baseline: an unknown rule id reports stale_baseline, not fail', () => {
+    const result = checkBaseline({ ruleId: 'rule-that-does-not-exist', ruleVersion: '1.2.0', line: 'x', expectHit: true });
+    assert.equal(result.status, 'stale_baseline');
+});
+
+test('regression baseline: a version mismatch reports stale_baseline, not a guess', () => {
+    const result = checkBaseline({ ruleId: 'email-address', ruleVersion: '0.0.1-pinned-to-a-past-revision', line: 'a@b.com', expectHit: true });
+    assert.equal(result.status, 'stale_baseline');
+});
+
+test('regression baseline: a real behavior change is still reported as fail, not swallowed as stale', () => {
+    const result = checkBaseline({ ruleId: 'email-address', ruleVersion: '1.2.0', line: 'a@b.com', expectHit: false });
+    assert.equal(result.status, 'fail');
 });
 
 test('ignore list and inline marker suppress findings', async () => {
