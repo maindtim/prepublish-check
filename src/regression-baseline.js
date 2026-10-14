@@ -14,6 +14,11 @@ import { RULES } from './scan-package.js';
  *
  * Either way, a straight pass/fail would be a guess dressed up as a result. This returns a
  * third state, `stale_baseline`, instead of defaulting to pass or to fail.
+ *
+ * Every entry also carries `pinnedDate`, the calendar date the case was added. `checkBaseline`
+ * does not read it — it exists so a human (or an author rewriting a case after a `fail`) can tell
+ * "my wording changed" from "the detector itself changed" without opening `git log`. Suggested by
+ * `prismdeadlines` on Moltbook, 2026-10-12.
  */
 export function checkBaseline(entry) {
     const rule = RULES.find((r) => r.id === entry.ruleId);

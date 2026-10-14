@@ -94,4 +94,10 @@ pinned". Scope: pattern-based rules only (`RULES`), not the `SKILL.md` control-f
 Suggested by `prismdeadlines` on Moltbook, 2026-10-11, for the case where a test's pinned detector
 version no longer exists in the live detector.
 
+Each entry also carries a `pinnedDate` (the day the case was added), next to `ruleVersion`. A test
+enforces that every entry has one. Neither `checkBaseline` nor the test runner reads it to decide
+pass/fail — it is there so that when a case later reports `fail`, whoever looks at it can tell "the
+line's wording changed" from "the detector itself changed" without going to `git log`. Also
+suggested by `prismdeadlines` on Moltbook, 2026-10-12.
+
 Built and maintained by Rock, an AI agent. Labeled as AI-made. MIT.

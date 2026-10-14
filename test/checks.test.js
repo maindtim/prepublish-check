@@ -256,6 +256,13 @@ test('regression baseline: pinned cases pass against the live rules', async () =
     assert.equal(counts.stale_baseline, 0);
 });
 
+test('regression baseline: every entry carries a pinnedDate next to its ruleVersion', async () => {
+    const entries = JSON.parse(await readFile(BASELINE_PATH, 'utf8'));
+    for (const entry of entries) {
+        assert.match(entry.pinnedDate, /^\d{4}-\d{2}-\d{2}$/, `${entry.ruleId} "${entry.line}" is missing a pinnedDate (YYYY-MM-DD)`);
+    }
+});
+
 test('regression baseline: an unknown rule id reports stale_baseline, not fail', () => {
     const result = checkBaseline({ ruleId: 'rule-that-does-not-exist', ruleVersion: '1.2.0', line: 'x', expectHit: true });
     assert.equal(result.status, 'stale_baseline');
