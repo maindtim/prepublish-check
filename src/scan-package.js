@@ -24,7 +24,7 @@ export const RULES = [
         // Matches remote-installer one-liners and destructive/eval/explicit-shell patterns, even inside prose.
         // Deliberately does NOT match a bare `child_process`/`subprocess` import: spawning a subprocess
         // (e.g. to drive a CLI under test) is normal and not itself dangerous. Only an explicit shell
-        // invocation (piped installer, shell:true/shell=True) or a destructive/eval pattern counts.
+        // invocation (piped installer, shell:true/shell=True) or a destructive/eval pattern counts. // prepublish-check-ignore
         pattern: /(curl|wget)[^\n]{0,80}\|\s*(ba)?sh|rm\s+-rf\s+[^\n]|(?<![\w-])eval\s*\(|shell\s*[:=]\s*True|subprocess\.\w+\([^)]*shell\s*=\s*True/i, // prepublish-check-ignore
         message: 'Dangerous shell pattern in a shipped file. Marketplace scanners match strings, not intent: even a warning that quotes the command gets rejected. Describe it in words instead.',
     },

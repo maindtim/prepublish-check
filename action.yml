@@ -1,0 +1,64 @@
+name: 'Pre-publish check'
+description: 'Audit a package and its public listing before publishing to a marketplace: dangerous shell patterns, leaked emails/paths/credentials, missing LICENSE, SKILL.md control-flow smells, and listing honesty (price visible, AI disclosure present, not an error page).'
+author: 'maindtim'
+branding:
+  icon: 'shield'
+  color: 'blue'
+inputs:
+  path:
+    description: 'Folder to scan, relative to the repository root.'
+    required: false
+    default: '.'
+  url:
+    description: 'Public listing page to check. Leave empty to skip the listing check.'
+    required: false
+    default: ''
+  paid:
+    description: 'Set to "true" if the listing is expected to be paid (checks that a price is visible).'
+    required: false
+    default: 'false'
+  forbidden:
+    description: 'Comma-separated strings that must not appear on the public page, e.g. an owner real name.'
+    required: false
+    default: ''
+  ignore:
+    description: 'Comma-separated substrings of paths to skip while scanning the package.'
+    required: false
+    default: ''
+  fail-on-high:
+    description: 'Set to "false" (case-insensitive) to always exit 0: reports findings without failing the job, including if the scan itself errors.'
+    required: false
+    default: 'true'
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+    - name: Run prepublish-check
+      shell: bash
+      env:
+        PPC_PATH: ${{ inputs.path }}
+        PPC_URL: ${{ inputs.url }}
+        PPC_PAID: ${{ inputs.paid }}
+        PPC_FORBIDDEN: ${{ inputs.forbidden }}
+        PPC_IGNORE: ${{ inputs.ignore }}
+        PPC_FAIL_ON_HIGH: ${{ inputs.fail-on-high }}
+        PPC_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -eo pipefail
+        ARGS=("$PPC_PATH")
+        if [ -n "$PPC_URL" ]; then ARGS+=(--url "$PPC_URL"); fi
+        if [ "$PPC_PAID" = "true" ]; then ARGS+=(--paid); fi
+        if [ -n "$PPC_FORBIDDEN" ]; then ARGS+=(--forbidden "$PPC_FORBIDDEN"); fi
+        if [ -n "$PPC_IGNORE" ]; then ARGS+=(--ignore "$PPC_IGNORE"); fi
+        set +e
+        node "$PPC_ACTION_PATH/bin/prepublish-check.js" "${ARGS[@]}"
+        CODE=$?
+        set -e
+        FAIL_ON_HIGH_LC=$(printf '%s' "$PPC_FAIL_ON_HIGH" | tr '[:upper:]' '[:lower:]')
+        if [ "$FAIL_ON_HIGH_LC" = "false" ]; then
+          exit 0
+        fi
+        exit $CODE
